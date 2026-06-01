@@ -1,65 +1,140 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { api } from '../services/api';
+import { Lock, Mail, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+
+interface ErroResposta {
+  response?: {
+    data?: {
+      erro?: string;
+    };
+  };
+}
+
+export default function Login() {
+  const router = useRouter();
+  
+  const [email, setEmail] = useState<string>('');
+  const [senha, setSenha] = useState<string>('');
+  const [carregando, setCarregando] = useState<boolean>(false);
+  const [estaAutenticado, setEstaAutenticado] = useState<boolean | null>(null);
+  const [erro, setErro] = useState<string>('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('@erp:token');
+    
+    if (token) {
+      router.replace('/dashboard');
+    } else {
+      setEstaAutenticado(false);
+    }
+  }, [router]);
+
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErro('');
+    setCarregando(true);
+
+    // 🔑 USUÁRIO MESTRE CHUMBADO NO CÓDIGO PARA TESTE RÁPIDO
+    if (email === 'gtsglobaltech01@gmail.com' && senha === 'Ve010203@') {
+      // Cria um token fictício para o front achar que está logado
+      localStorage.setItem('@erp:token', 'token-ficticio-de-teste-mestre');
+      router.push('/dashboard');
+      return;
+    }
+
+    // Se não for o usuário mestre, tenta logar na API/Banco normalmente
+    try {
+      const response = await api.post('/api/auth/login', { email, senha });
+      const { token } = response.data;
+
+      localStorage.setItem('@erp:token', token);
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      console.error(err);
+      const erroTratado = err as ErroResposta;
+      setErro(erroTratado.response?.data?.erro || 'Falha ao fazer login. Verifique suas credenciais.');
+      setCarregando(false);
+    }
+  }
+
+  if (estaAutenticado === null) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+      
+      {/* Card Compacto Estilo Vidro Fumê Transparente */}
+      <div className="w-full max-w-sm bg-slate-800/40 backdrop-blur-md border border-slate-700/60 rounded-2xl p-6 shadow-2xl">
+        
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-white tracking-tight">Painel ERP</h1>
+          <p className="text-slate-400 text-xs mt-1">Insira seus dados de acesso</p>
+        </div>
+
+        {erro && (
+          <div className="mb-4 bg-red-950/40 border border-red-900/60 text-red-400 text-xs p-2.5 rounded-lg text-center font-medium">
+            {erro}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-slate-300 text-xs font-semibold mb-1 ml-0.5">E-mail Corporativo</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="w-full bg-slate-950/60 border border-slate-700/50 rounded-xl py-2 pl-9 pr-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-semibold mb-1 ml-0.5">Sua Senha</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+              <input
+                type="password"
+                required
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-slate-950/60 border border-slate-700/50 rounded-xl py-2 pl-9 pr-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={carregando}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 text-white text-sm font-semibold rounded-xl py-2.5 flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:cursor-not-allowed active:scale-[0.99]"
+          >
+            {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Entrar no Sistema'}
+          </button>
+        </form>
+
+        <div className="text-center mt-6 pt-4 border-t border-slate-800">
+          <p className="text-slate-400 text-xs">
+            Não tem uma conta?{' '}
+            <Link href="/cadastro" className="text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
+              Cadastre sua empresa
+            </Link>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
