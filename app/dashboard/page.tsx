@@ -11,7 +11,9 @@ import {
   Loader2,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar
+  Calendar,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -52,6 +54,9 @@ export default function DashboardPage() {
     { idx: 11, mes: 'Dez', hIn: 'h-[90%]', hOut: 'h-[35%]', valorIn: '48k', valorOut: '16k' },
   ];
 
+  // Identifica os dados do mês em foco para exibição no cabeçalho do gráfico
+  const dadosMesFocado = dadosGrafico[mesSelecionadoIdx] || dadosGrafico[5];
+
   if (carregando) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -68,13 +73,14 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto space-y-6">
         
         {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/60 pb-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Visão Geral</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Métricas de saúde financeira e cadastros consolidados.</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Visão Geral</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Métricas consolidadas de saúde financeira e movimentações de estoque.</p>
           </div>
-          <div className="text-xs text-slate-600 font-semibold bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm self-start sm:self-center">
-            Atualizado agora mesmo
+          <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm self-start sm:self-center">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Sincronizado em tempo real
           </div>
         </div>
 
@@ -84,18 +90,18 @@ export default function DashboardPage() {
             const Icone = item.icone;
             const isPositivo = item.status.startsWith('+');
             return (
-              <div key={index} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
-                <div className="space-y-1.5">
-                  <p className="text-slate-400 text-[11px] font-bold tracking-wide uppercase">{item.titulo}</p>
-                  <h3 className="text-lg font-bold text-slate-800 tracking-tight">{item.valor}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isPositivo ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+              <div key={index} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all hover:shadow-md hover:border-slate-300 group">
+                <div className="space-y-2">
+                  <p className="text-slate-400 text-[11px] font-bold tracking-wider uppercase">{item.titulo}</p>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight transition-colors group-hover:text-indigo-600">{item.valor}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${isPositivo ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                       {item.status}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{item.sub}</span>
+                    <span className="text-[11px] text-slate-400 font-medium">{item.sub}</span>
                   </div>
                 </div>
-                <div className={`p-3 rounded-xl ${item.bg} ${item.cor}`}>
+                <div className={`p-3.5 rounded-2xl ${item.bg} ${item.cor} transition-transform group-hover:scale-110 duration-200 shadow-inner`}>
                   <Icone className="w-5 h-5" />
                 </div>
               </div>
@@ -107,23 +113,27 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           
           {/* SEÇÃO DO GRÁFICO ANUAL */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm lg:col-span-2 flex flex-col justify-between overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm lg:col-span-2 flex flex-col justify-between overflow-hidden group/graph">
             
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
               <div>
-                <h4 className="text-sm font-bold text-slate-800">Fluxo de Caixa</h4>
-                <p className="text-slate-400 text-[11px] mt-0.5">Comparativo anual de faturamento (entradas) vs custos (saídas)</p>
+                <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-slate-400" />
+                  Fluxo de Caixa Operacional
+                </h4>
+                <p className="text-slate-400 text-xs mt-0.5">Demonstrativo de faturamento (entradas) contra custos de competência (saídas)</p>
               </div>
               
-              <div className="flex items-center gap-4 text-[11px] font-bold self-start sm:self-center">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-4 text-[11px] font-bold self-start sm:self-center">
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-xl">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                    <span className="text-slate-500 font-semibold">Entradas</span>
+                    <span className="text-slate-600 font-bold">Entradas (R$ {dadosMesFocado.valorIn})</span>
                   </div>
+                  <div className="w-[1px] h-3 bg-slate-200" />
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span className="text-slate-500 font-semibold">Saídas</span>
+                    <span className="text-slate-600 font-bold">Saídas (R$ {dadosMesFocado.valorOut})</span>
                   </div>
                 </div>
 
@@ -133,84 +143,89 @@ export default function DashboardPage() {
                   <select 
                     value={mesSelecionadoIdx}
                     onChange={(e) => setMesSelecionadoIdx(Number(e.target.value))}
-                    className="bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-7 py-1.5 text-[11px] font-bold text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none shadow-sm"
+                    className="bg-white border border-slate-200 rounded-xl pl-8 pr-8 py-1.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer appearance-none shadow-sm hover:bg-slate-50"
                   >
                     {dadosGrafico.map((dado) => (
-                      <option key={dado.idx} value={dado.idx} className="bg-white">
-                        Mês: {dado.mes}
+                      <option key={dado.idx} value={dado.idx}>
+                        Foco: {dado.mes}
                       </option>
                     ))}
                   </select>
-                  <span className="absolute right-2.5 pointer-events-none text-slate-400 text-[8px]">▼</span>
+                  <span className="absolute right-3 pointer-events-none text-slate-400 text-[8px]">▼</span>
                 </div>
               </div>
             </div>
 
-            {/* Container das Colunas com Valores Fixos */}
-            <div className="w-full overflow-x-auto scrollbar-none">
-              <div className="h-52 flex items-end justify-between px-2 pt-6 border-b border-slate-100 min-w-[600px] lg:min-w-0 gap-1">
+            {/* Container das Colunas */}
+            <div className="w-full overflow-x-auto scrollbar-none pt-4">
+              <div className="h-56 flex items-end justify-between px-2 border-b border-slate-100 min-w-[620px] lg:min-w-0 gap-3 relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]">
+                
                 {dadosGrafico.map((dado) => {
                   const ehMesSelecionado = dado.idx === mesSelecionadoIdx;
 
                   return (
                     <div 
                       key={dado.idx} 
-                      className="flex flex-col items-center flex-1 group relative pb-2"
+                      onMouseEnter={() => setMesSelecionadoIdx(dado.idx)}
+                      className="flex flex-col items-center flex-1 group relative pb-3 cursor-pointer"
                     >
                       
-                      {/* Tooltip Dinâmico */}
-                      <div className="absolute -top-12 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition-all duration-150 z-10 pointer-events-none flex flex-col gap-0.5 text-center min-w-[85px]">
-                        <span className="text-indigo-300 font-bold">Rec: R$ {dado.valorIn}</span>
-                        <span className="text-rose-300 font-bold">Pag: R$ {dado.valorOut}</span>
+                      {/* Tooltip Avançado */}
+                      <div className={`absolute -top-14 bg-slate-900 text-white text-[10px] p-2 rounded-xl shadow-xl transition-all duration-200 z-10 pointer-events-none flex flex-col gap-0.5 text-left min-w-[95px]
+                        ${ehMesSelecionado ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-1'}
+                      `}>
+                        <p className="text-[9px] text-slate-400 font-bold border-b border-slate-800 pb-1 mb-1 uppercase tracking-wider">Mês de {dado.mes}</p>
+                        <span className="text-indigo-300 font-bold flex items-center justify-between">Rec: <span>R$ {dado.valorIn}</span></span>
+                        <span className="text-rose-300 font-bold flex items-center justify-between">Pag: <span>R$ {dado.valorOut}</span></span>
                       </div>
 
-                      {/* Área das Velas/Barras Delgadas com Valores Fixos no Topo */}
-                      <div className="w-full flex items-end justify-center gap-1.5 h-36 mb-2 relative">
+                      {/* Área das Velas/Barras */}
+                      <div className="w-full flex items-end justify-center gap-2 h-40 relative">
                         
                         {/* Coluna 1: Entradas (Indigo) */}
-                        <div className="flex flex-col items-center justify-end h-full w-2.5 relative">
-                          <span className={`text-[9px] font-bold mb-1 absolute transition-all duration-300
-                            ${ehMesSelecionado ? 'text-indigo-600 font-extrabold scale-105' : 'text-slate-400'}
+                        <div className="flex flex-col items-center justify-end h-full w-3 relative">
+                          <span className={`text-[9px] font-extrabold mb-1 absolute transition-all duration-200
+                            ${ehMesSelecionado ? 'text-indigo-600 scale-110 -translate-y-1' : 'text-slate-400/70 opacity-0 group-hover:opacity-100'}
                           `} style={{ bottom: `calc(${dado.hIn.match(/\d+/)?.[0]}% + 2px)` }}>
                             {dado.valorIn}
                           </span>
                           <div className={`
-                            ${dado.hIn} w-full rounded-t-full transition-all duration-500 ease-out
+                            ${dado.hIn} w-full rounded-t-md transition-all duration-300 ease-out
                             ${ehMesSelecionado 
-                              ? 'bg-indigo-600 shadow-[0_4px_12px_rgba(79,70,229,0.3)] scale-x-[1.15]' 
-                              : 'bg-indigo-600/20 group-hover:bg-indigo-600/50'}
+                              ? 'bg-indigo-600 shadow-[0_4px_14px_rgba(79,70,229,0.35)]' 
+                              : 'bg-indigo-200 group-hover:bg-indigo-400'}
                           `} />
                         </div>
                         
                         {/* Coluna 2: Saídas (Rose) */}
-                        <div className="flex flex-col items-center justify-end h-full w-2.5 relative">
-                          <span className={`text-[9px] font-bold mb-1 absolute transition-all duration-300
-                            ${ehMesSelecionado ? 'text-rose-600 font-extrabold scale-105' : 'text-slate-400'}
+                        <div className="flex flex-col items-center justify-end h-full w-3 relative">
+                          <span className={`text-[9px] font-extrabold mb-1 absolute transition-all duration-200
+                            ${ehMesSelecionado ? 'text-rose-600 scale-110 -translate-y-1' : 'text-slate-400/70 opacity-0 group-hover:opacity-100'}
                           `} style={{ bottom: `calc(${dado.hOut.match(/\d+/)?.[0]}% + 2px)` }}>
                             {dado.valorOut}
                           </span>
                           <div className={`
-                            ${dado.hOut} w-full rounded-t-full transition-all duration-500 ease-out
+                            ${dado.hOut} w-full rounded-t-md transition-all duration-300 ease-out
                             ${ehMesSelecionado 
-                              ? 'bg-rose-500 shadow-[0_4px_12px_rgba(244,63,94,0.3)] scale-x-[1.15]' 
-                              : 'bg-rose-500/20 group-hover:bg-rose-500/50'}
-                        `} />
+                              ? 'bg-rose-500 shadow-[0_4px_14px_rgba(244,63,94,0.35)]' 
+                              : 'bg-rose-200 group-hover:bg-rose-400'}
+                          `} />
                         </div>
 
                       </div>
 
                       {/* Nome do Mês */}
-                      <div className="flex flex-col items-center w-full relative pt-1.5">
-                        <span className={`text-[11px] font-bold tracking-wide transition-colors duration-300
+                      <div className="flex flex-col items-center w-full relative pt-2">
+                        <span className={`text-xs font-bold tracking-wide transition-colors duration-200
                           ${ehMesSelecionado ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}
                         `}>
                           {dado.mes}
                         </span>
                         
-                        {/* Linha indicadora abaixo do mês selecionado */}
-                        {ehMesSelecionado && (
-                          <span className="absolute bottom-[-9px] w-6 h-[2px] bg-indigo-600 rounded-full shadow-[0_1px_4px_rgba(79,70,229,0.5)]" />
-                        )}
+                        {/* Linha indicadora animada */}
+                        <span className={`absolute bottom-0 h-[3px] bg-indigo-600 rounded-full transition-all duration-300
+                          ${ehMesSelecionado ? 'w-6 shadow-[0_1px_6px_rgba(79,70,229,0.6)]' : 'w-0'}
+                        `} />
                       </div>
 
                     </div>
@@ -221,50 +236,59 @@ export default function DashboardPage() {
           </div>
 
           {/* Atividades do Sistema */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between group">
             <div>
-              <h4 className="text-sm font-bold text-slate-800">Atividades do Sistema</h4>
-              <p className="text-slate-400 text-[11px] mt-0.5">Últimas movimentações</p>
+              <div className="flex items-center justify-between">
+                <h4 className="text-base font-bold text-slate-900">Atividades do Sistema</h4>
+                <button 
+                  onClick={() => router.push('/fluxo')}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Ver Tudo
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+              <p className="text-slate-400 text-xs mt-0.5">Últimas movimentações auditadas</p>
             </div>
             
             <div className="space-y-4 mt-6 overflow-y-auto pr-1 flex-1 text-xs">
-              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                <div className="flex gap-2.5">
-                  <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600 mt-0.5">
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3.5 hover:bg-slate-50/50 p-1.5 rounded-xl transition-colors">
+                <div className="flex gap-3">
+                  <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 self-center shadow-inner">
+                    <ArrowUpRight className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-slate-700 font-bold">Novo cliente cadastrado</p>
-                    <p className="text-[10px] text-slate-400 font-semibold">Módulo de Entidades</p>
+                    <p className="text-slate-800 font-bold">Novo cliente cadastrado</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Módulo de Entidades</p>
                   </div>
                 </div>
-                <span className="text-slate-400 text-[10px] font-semibold">5m atrás</span>
+                <span className="text-slate-400 text-[10px] font-semibold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/40">5m atrás</span>
               </div>
 
-              <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                <div className="flex gap-2.5">
-                  <div className="p-1 rounded-lg bg-emerald-50 text-emerald-600 mt-0.5">
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+              <div className="flex items-start justify-between border-b border-slate-100 pb-3.5 hover:bg-slate-50/50 p-1.5 rounded-xl transition-colors">
+                <div className="flex gap-3">
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 self-center shadow-inner">
+                    <ArrowUpRight className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-slate-700 font-bold">Fatura recebida (R$ 1.200)</p>
-                    <p className="text-[10px] text-slate-400 font-semibold">Contas a Receber</p>
+                    <p className="text-slate-800 font-bold">Fatura recebida (R$ 1.200)</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Contas a Receber</p>
                   </div>
                 </div>
-                <span className="text-slate-400 text-[10px] font-semibold">1h atrás</span>
+                <span className="text-slate-400 text-[10px] font-semibold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/40">1h atrás</span>
               </div>
 
-              <div className="flex items-start justify-between">
-                <div className="flex gap-2.5">
-                  <div className="p-1 rounded-lg bg-rose-50 text-rose-600 mt-0.5">
-                    <ArrowDownRight className="w-3.5 h-3.5" />
+              <div className="flex items-start justify-between hover:bg-slate-50/50 p-1.5 rounded-xl transition-colors">
+                <div className="flex gap-3">
+                  <div className="p-2 rounded-xl bg-rose-50 text-rose-600 self-center shadow-inner">
+                    <ArrowDownRight className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-slate-700 font-bold">Conta de luz lançada</p>
-                    <p className="text-[10px] text-slate-400 font-semibold">Contas a Pagar</p>
+                    <p className="text-slate-800 font-bold">Conta de luz lançada</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Contas a Pagar</p>
                   </div>
                 </div>
-                <span className="text-slate-400 text-[10px] font-semibold">3h atrás</span>
+                <span className="text-slate-400 text-[10px] font-semibold bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/40">3h atrás</span>
               </div>
             </div>
           </div>

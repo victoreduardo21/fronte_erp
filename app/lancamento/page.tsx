@@ -37,12 +37,12 @@ export default function LancamentoManualPage() {
   const [status, setStatus] = useState<string>('pendente'); 
   const [observacao, setObservacao] = useState<string>('');
 
-  // 🗄️ Estados de Autocomplete para Clientes e Fornecedores
+  // 🗄️ Estados de Autocomplete para Clientes e Fornecedores (PF e PJ)
   const [termoBusca, setTermoBusca] = useState<string>('');
   const [entidadeSelecionada, setEntidadeSelecionada] = useState<Entidade | null>(null);
   const [mostrarSugestoes, setMostrarSugestoes] = useState<boolean>(false);
 
-  // Mocks locais emulando as tabelas do banco de dados do seu ERP
+  // Mocks locais emulando as tabelas do banco de dados do seu ERP (Contendo PJ e PF)
   const clientesMock: Entidade[] = [
     { id: 'c1', nome: 'Distribuidora de Alimentos Alfa Ltda', documento: '12.345.678/0001-90', tipo: 'PJ' },
     { id: 'c2', nome: 'Carlos Henrique Silva', documento: '456.789.123-00', tipo: 'PF' },
@@ -53,6 +53,7 @@ export default function LancamentoManualPage() {
     { id: 'f1', nome: 'Atacadista de Alimentos Central S/A', documento: '45.123.890/0001-12', tipo: 'PJ' },
     { id: 'f2', nome: 'Distribuidora de Embalagens Plastix', documento: '02.456.789/0001-55', tipo: 'PJ' },
     { id: 'f3', nome: 'GTS Consultoria Contábil', documento: '33.444.555/0001-44', tipo: 'PJ' },
+    { id: 'f4', nome: 'Marcos Roberto Mecânico Autônomo', documento: '123.456.789-11', tipo: 'PF' },
   ];
 
   useEffect(() => {
@@ -85,11 +86,11 @@ export default function LancamentoManualPage() {
     setStatus('pendente');
   }
 
-  // Filtra as sugestões da tabela correta baseado no tipo de lançamento
+  // Filtra as sugestões baseado no termo digitado (Busca por Nome, CNPJ ou CPF)
   const baseParaFiltrar = tipo === 'entrada' ? clientesMock : fornecedoresMock;
   const sugestoesFiltradas = baseParaFiltrar.filter(entidade =>
     entidade.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    entidade.documento.includes(termoBusca)
+    entidade.documento.replace(/[^\d]/g, '').includes(termoBusca.replace(/[^\d]/g, ''))
   );
 
   function handleSalvar(e: React.FormEvent) {
@@ -100,17 +101,18 @@ export default function LancamentoManualPage() {
       return;
     }
 
-    // 🔥 TRAVA DE SEGURANÇA: Obriga a usar um registro existente na base do banco
+    // Trava de segurança para garantir vínculo íntegro no banco de dados
     if (!entidadeSelecionada) {
-      alert(`Por favor, selecione um ${tipo === 'entrada' ? 'Cliente' : 'Fornecedor'} válido listado no sistema.`);
+      alert(`Por favor, selecione um ${tipo === 'entrada' ? 'Cliente' : 'Fornecedor'} cadastrado na lista.`);
       return;
     }
 
     const novoLancamento = {
       tipo,
       descricao,
-      entidadeId: entidadeSelecionada.id, // Envia o ID para manter o relacionamento no banco Node.js
+      entidadeId: entidadeSelecionada.id, 
       entidadeNome: entidadeSelecionada.nome,
+      entidadeTipo: entidadeSelecionada.tipo, // PF ou PJ
       categoria,
       data: dataLancamento,
       valor: parseFloat(valor),
@@ -140,6 +142,7 @@ export default function LancamentoManualPage() {
         {/* Voltar e Título */}
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={() => router.back()}
             className="p-2 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer shadow-sm"
           >
@@ -208,7 +211,7 @@ export default function LancamentoManualPage() {
               />
             </div>
 
-            {/* 🔍 CAMPO AUTOCOMPLETE INTELIGENTE: CLIENTE OU FORNECEDOR */}
+            {/* 🔍 AUTOCOMPLETE ATUALIZADO: SUPORTA INTEGRALMENTE BUSCA POR PF (CPF) E PJ (CNPJ) */}
             <div ref={dropdownRef} className="flex flex-col gap-1.5 relative">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                 {tipo === 'entrada' ? 'Buscar Cliente *' : 'Buscar Fornecedor *'}
@@ -217,18 +220,17 @@ export default function LancamentoManualPage() {
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
                 <input 
                   type="text"
-                  value={entidadeSelecionada ? entidadeSelecionada.nome : termoBusca}
+                  value={entidadeSelecionada ? entidadeselecionada.nome : termoBusca}
                   disabled={!!entidadeSelecionada}
                   onFocus={() => setMostrarSugestoes(true)}
                   onChange={(e) => { setTermoBusca(e.target.value); setMostrarSugestoes(true); }}
-                  placeholder={tipo === 'entrada' ? "Digite o nome ou CNPJ do cliente..." : "Digite o nome ou CNPJ do fornecedor..."}
+                  placeholder={tipo === 'entrada' ? "Digite nome, CPF ou CNPJ do cliente..." : "Digite nome, CPF ou CNPJ do fornecedor..."}
                   className={`w-full border rounded-xl pl-9 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-all
                     ${entidadeSelecionada 
                       ? 'bg-indigo-50/50 border-indigo-200 text-indigo-900 font-bold' 
                       : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                 />
                 
-                {/* Botão X para limpar a seleção anterior */}
                 {entidadeSelecionada && (
                   <button
                     type="button"
@@ -254,15 +256,28 @@ export default function LancamentoManualPage() {
                         className="p-3 text-xs hover:bg-slate-50 cursor-pointer flex items-center justify-between group"
                       >
                         <div className="flex items-center gap-2">
-                          {entidade.tipo === 'PJ' ? <Building2 className="w-3.5 h-3.5 text-slate-400" /> : <User className="w-3.5 h-3.5 text-slate-400" />}
-                          <span className="font-semibold text-slate-700 group-hover:text-slate-900">{entidade.nome}</span>
+                          {entidade.tipo === 'PJ' ? (
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          ) : (
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          )}
+                          <span className="font-semibold text-slate-700 group-hover:text-slate-900 truncate max-w-[180px]">
+                            {entidade.nome}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">{entidade.documento}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-extrabold px-1 py-0.2 rounded uppercase ${
+                            entidade.tipo === 'PJ' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {entidade.tipo}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono shrink-0">{entidade.documento}</span>
+                        </div>
                       </div>
                     ))
                   ) : (
                     <div className="p-3 text-xs text-slate-400 font-medium text-center">
-                      Nenhum registro cadastrado com esse nome.
+                      Nenhum registro encontrado para essa busca.
                     </div>
                   )}
                 </div>
@@ -288,7 +303,7 @@ export default function LancamentoManualPage() {
 
                 <optgroup label="🔴 CUSTOS DAS MERCADORIAS & SERVIÇOS (CMV/CSV)">
                   <option value="Compra de Mercadoria para Revenda">Compra de Mercadoria para Revenda</option>
-                  <option value="Matéria-prima e Insumos de Production">Matéria-prima e Insumos de Produção</option>
+                  <option value="Matéria-prima e Insumos de Produção">Matéria-prima e Insumos de Produção</option>
                   <option value="Fretes e Logística de Entrega">Fretes e Logística de Entrega (Fretamento)</option>
                   <option value="Comissões sobre Vendas">Comissões sobre Vendas</option>
                 </optgroup>
