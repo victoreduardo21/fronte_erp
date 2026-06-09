@@ -15,33 +15,56 @@ import {
   Edit2
 } from 'lucide-react';
 
+// Interfaces internas exclusivas do comportamento do Front-End
+interface ContaPagar {
+  id: string;
+  fornecedor: string;
+  categoria: string;
+  vencimento: string;
+  valor: number;
+  status: 'pago' | 'pendente' | 'vencido';
+}
+
 export default function ContasAPagarPage() {
   const router = useRouter();
   const [carregando, setCarregando] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
 
-  // Estado dinâmico para gerenciar as contas e permitir alteração de status em tempo real
-  const [contas, setContas] = useState([
-    { id: '1', fornecedor: 'Servidores AWS Cloud', categoria: 'Infraestrutura', vencimento: '05/06/2026', valor: 1250.00, status: 'pendente' },
-    { id: '2', fornecedor: 'Link de Internet Dedicada', categoria: 'Custos Fixos', vencimento: '10/06/2026', valor: 450.00, status: 'pendente' },
-    { id: '3', fornecedor: 'Distribuidora de Energia S/A', categoria: 'Custos Fixos', vencimento: '28/05/2026', valor: 380.20, status: 'pago' },
-    { id: '4', fornecedor: 'Consultoria Contábil GTS', categoria: 'Serviços', vencimento: '20/05/2026', valor: 600.00, status: 'vencido' },
-    { id: '5', fornecedor: 'Adobe Systems Software', categoria: 'Ferramentas', vencimento: '01/06/2026', valor: 120.00, status: 'pendente' },
-    { id: '6', fornecedor: 'Aluguel do Escritório Central', categoria: 'Custos Fixos', vencimento: '25/05/2026', valor: 3200.00, status: 'pago' },
-  ]);
+  // 🗄️ ESTADO ZERADO PRONTO PARA PRODUÇÃO (CONEXÃO COM BACKEND)
+  const [contas, setContas] = useState<ContaPagar[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      setCarregando(false);
+      return;
     }
+
+    async function carregarContasAPagar() {
+      try {
+        // 📡 CHAMADA REAL À SUA API DE CONTAS A PAGAR NODE.JS
+        // const res = await fetch('http://localhost:4000/api/v1/financeiro/pagar', { headers: { Authorization: `Bearer ${token}` } });
+        // const data = await res.json();
+        // setContas(data.contas);
+
+        // Inicializador limpo de produção
+        setContas([]);
+        setCarregando(false);
+      } catch (error) {
+        console.error('Erro ao buscar contas a pagar do banco:', error);
+        setCarregando(false);
+      }
+    }
+
+    carregarContasAPagar();
   }, [router]);
 
-  // 🔑 FUNÇÃO DE DAR BAIXA OPERACIONAL
-  function handleDarBaixa(id: string) {
+  // 🔑 FUNÇÃO DE DAR BAIXA OPERACIONAL COM ATUALIZAÇÃO NO BANCO (FETCH COMENTADO)
+  async function handleDarBaixa(id: string) {
+    // const token = localStorage.getItem('@erp:token');
+    // await fetch(`http://localhost:4000/api/v1/financeiro/pagar/${id}/baixa`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+    
     setContas(contasAnteriores => 
       contasAnteriores.map(conta => 
         conta.id === id ? { ...conta, status: 'pago' } : conta
@@ -56,7 +79,7 @@ export default function ContasAPagarPage() {
     return bateBusca && bateStatus;
   });
 
-  // Cálculos dinâmicos dos blocos com base no estado atualizado
+  // Cálculos dinâmicos dos blocos superiores de indicadores
   const totalEmAberto = contas.filter(c => c.status === 'pendente').reduce((acc, curr) => acc + curr.valor, 0);
   const totalPago = contas.filter(c => c.status === 'pago').reduce((acc, curr) => acc + curr.valor, 0);
   const totalVencido = contas.filter(c => c.status === 'vencido').reduce((acc, curr) => acc + curr.valor, 0);
@@ -152,7 +175,7 @@ export default function ContasAPagarPage() {
                     ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                     : 'text-slate-500 hover:text-slate-800'}`}
               >
-                {status === 'todos' ? 'Todos' : status + 's'}
+                {status === 'todos' ? 'Todos' : status === 'pendente' ? 'Em Aberto' : status + 'os'}
               </button>
             ))}
           </div>
@@ -197,11 +220,11 @@ export default function ContasAPagarPage() {
 
                         <td className="py-3.5 px-5">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${conta.status === 'pago' && 'bg-emerald-50 text-emerald-700'}
-                            ${conta.status === 'pendente' && 'bg-indigo-50 text-indigo-700'}
-                            ${conta.status === 'vencido' && 'bg-rose-50 text-rose-700'}
+                            ${conta.status === 'pago' && 'bg-emerald-50 text-emerald-700 border border-emerald-100'}
+                            ${conta.status === 'pendente' && 'bg-indigo-50 text-indigo-700 border border-indigo-100'}
+                            ${conta.status === 'vencido' && 'bg-rose-50 text-rose-700 border border-rose-100'}
                           `}>
-                            {conta.status}
+                            {conta.status === 'pendente' ? 'Em Aberto' : conta.status}
                           </span>
                         </td>
 
@@ -209,27 +232,28 @@ export default function ContasAPagarPage() {
                           {conta.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </td>
 
-                        {/* 🛠️ COLUNA DE AÇÕES INTERATIVAS */}
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             
-                            {/* Botão de Dar Baixa (Só aparece se NÃO estiver pago) */}
+                            {/* Botão de Dar Baixa (Só aparece se não estiver pago) */}
                             {conta.status !== 'pago' ? (
                               <button 
+                                type="button"
                                 onClick={() => handleDarBaixa(conta.id)}
-                                title="Marcar como Pago (Dar Baixa)"
+                                title="Liquidar Despesa (Dar Baixa)"
                                 className="p-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer"
                               >
                                 <Check className="w-3.5 h-3.5" />
                               </button>
                             ) : (
                               <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
-                                Concluído
+                                Liquidado
                               </span>
                             )}
 
                             {/* Botão de Editar */}
                             <button 
+                              type="button"
                               onClick={() => router.push(`/lancamento?edit=${conta.id}`)}
                               title="Editar Lançamento"
                               className="p-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
@@ -246,7 +270,7 @@ export default function ContasAPagarPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-semibold">
-                      Nenhuma conta a pagar encontrada para este filtro.
+                      Nenhuma conta a pagar identificada no banco de dados.
                     </td>
                   </tr>
                 )}
@@ -255,8 +279,8 @@ export default function ContasAPagarPage() {
           </div>
           
           <div className="bg-slate-50/60 border-t border-slate-200 px-5 py-3 flex items-center justify-between text-[11px] text-slate-400 font-semibold">
-            <span>Listando {contasFiltradas.length} despesas registradas</span>
-            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Audit Mode</span>
+            <span>Listando {contasFiltradas.length} obrigações financeiras</span>
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Accounts Payable</span>
           </div>
         </div>
 

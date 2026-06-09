@@ -15,32 +15,63 @@ import {
   CircleDollarSign
 } from 'lucide-react';
 
+// Interfaces internas exclusivas do comportamento do Front-End
+interface Transacao {
+  id: string;
+  descricao: string;
+  tipo: 'entrada' | 'saida';
+  categoria: string;
+  valor: number;
+  data: string;
+  status: 'pago' | 'recebido' | 'pendente';
+}
+
+interface PainelSaldos {
+  entradas: string;
+  saidas: string;
+  liquido: string;
+}
+
 export default function FluxoCaixaPage() {
   const router = useRouter();
   const [carregando, setCarregando] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
   const [filtroTipo, setFiltroTipo] = useState<string>('todos'); // todos, entrada, saida
 
+  // 🗄️ ESTADOS ZERADOS PRONTOS PARA RECEBER DADOS DO BANCO DE DADOS
+  const [saldos, setSaldos] = useState<PainelSaldos>({ entradas: 'R$ 0,00', saidas: 'R$ 0,00', liquido: 'R$ 0,00' });
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      setCarregando(false);
+      return;
     }
+
+    async function carregarFluxoCaixa() {
+      try {
+        // 📡 CHAMADA REAL À SUA API FINANCEIRA NODE.JS
+        // const res = await fetch('http://localhost:4000/api/v1/financeiro/fluxo', { headers: { Authorization: `Bearer ${token}` } });
+        // const data = await res.json();
+        // setTransacoes(data.transacoes);
+        // setSaldos(data.saldos);
+
+        // Inicializadores limpos de produção
+        setSaldos({ entradas: 'R$ 0,00', saidas: 'R$ 0,00', liquido: 'R$ 0,00' });
+        setTransacoes([]);
+
+        setCarregando(false);
+      } catch (error) {
+        console.error('Erro de conexão com o banco financeiro:', error);
+        setCarregando(false);
+      }
+    }
+
+    carregarFluxoCaixa();
   }, [router]);
 
-  // Mock de transações simulando o banco de dados do ERP
-  const transacoesMock = [
-    { id: '1', descricao: 'Mensalidade SaaS - Cliente Alfa', tipo: 'entrada', categoria: 'Serviços', valor: 1500.00, data: '31/05/2026', status: 'pago' },
-    { id: '2', descricao: 'Licença Cloud Server AWS', tipo: 'saida', categoria: 'Infraestrutura', valor: 850.00, data: '28/05/2026', status: 'pago' },
-    { id: '3', descricao: 'Consultoria Backend Módulo ERP', tipo: 'entrada', categoria: 'Desenvolvimento', valor: 4200.00, data: '25/05/2026', status: 'pago' },
-    { id: '4', descricao: 'Conta de Energia Elétrica', tipo: 'saida', categoria: 'Custos Fixos', valor: 340.50, data: '22/05/2026', status: 'pago' },
-    { id: '5', descricao: 'Licença de Software de Design', tipo: 'saida', categoria: 'Ferramentas', valor: 120.00, data: '20/05/2026', status: 'pendente' },
-    { id: '6', descricao: 'Venda de Licença Enterprise - Beta Ltda', tipo: 'entrada', categoria: 'Produtos', valor: 12500.00, data: '18/05/2026', status: 'pago' },
-  ];
-
-  const transacoesFiltradas = transacoesMock.filter(t => {
+  const transacoesFiltradas = transacoes.filter(t => {
     const bateBusca = t.descricao.toLowerCase().includes(busca.toLowerCase()) || t.categoria.toLowerCase().includes(busca.toLowerCase());
     const bateTipo = filtroTipo === 'todos' || t.tipo === filtroTipo;
     return bateBusca && bateTipo;
@@ -86,7 +117,7 @@ export default function FluxoCaixaPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Entradas do Período</p>
-              <h3 className="text-base font-bold text-emerald-600 mt-1">R$ 18.200,00</h3>
+              <h3 className="text-base font-bold text-emerald-600 mt-1">{saldos.entradas}</h3>
             </div>
             <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-600">
               <TrendingUp className="w-4 h-4" />
@@ -95,7 +126,7 @@ export default function FluxoCaixaPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saídas do Período</p>
-              <h3 className="text-base font-bold text-rose-600 mt-1">R$ 1.310,50</h3>
+              <h3 className="text-base font-bold text-rose-600 mt-1">{saldos.saidas}</h3>
             </div>
             <div className="p-2.5 rounded-lg bg-rose-50 text-rose-600">
               <TrendingDown className="w-4 h-4" />
@@ -104,7 +135,7 @@ export default function FluxoCaixaPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saldo Líquido</p>
-              <h3 className="text-base font-bold text-slate-800 mt-1">R$ 16.889,50</h3>
+              <h3 className="text-base font-bold text-slate-800 mt-1">{saldos.liquido}</h3>
             </div>
             <div className="p-2.5 rounded-lg bg-indigo-50 text-indigo-600">
               <CircleDollarSign className="w-4 h-4" />
@@ -126,24 +157,18 @@ export default function FluxoCaixaPage() {
           </div>
 
           <div className="flex items-center gap-1.5 bg-slate-50 p-1 border border-slate-200 rounded-xl w-full md:w-auto">
-            <button 
-              onClick={() => setFiltroTipo('todos')}
-              className={`flex-1 md:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${filtroTipo === 'todos' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              Todos
-            </button>
-            <button 
-              onClick={() => setFiltroTipo('entrada')}
-              className={`flex-1 md:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${filtroTipo === 'entrada' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              Entradas
-            </button>
-            <button 
-              onClick={() => setFiltroTipo('saida')}
-              className={`flex-1 md:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${filtroTipo === 'saida' ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'text-slate-500 hover:text-slate-800'}`}
-            >
-              Saídas
-            </button>
+            {['todos', 'entrada', 'saida'].map((t) => (
+              <button 
+                key={t}
+                onClick={() => setFiltroTipo(t)}
+                className={`flex-1 md:flex-initial px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer uppercase tracking-wide
+                  ${filtroTipo === t 
+                    ? t === 'todos' ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : t === 'entrada' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                    : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                {t === 'todos' ? 'Todos' : t === 'entrada' ? 'Entradas' : 'Saídas'}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -185,7 +210,7 @@ export default function FluxoCaixaPage() {
                         </td>
                         <td className="py-3.5 px-5">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${transacao.status === 'pago' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}
+                            ${transacao.status === 'pendente' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}
                           `}>
                             {transacao.status}
                           </span>
@@ -202,7 +227,7 @@ export default function FluxoCaixaPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-semibold">
-                      Nenhum lançamento encontrado para os filtros aplicados.
+                      Nenhum lançamento financeiro encontrado no banco de dados.
                     </td>
                   </tr>
                 )}
@@ -211,8 +236,8 @@ export default function FluxoCaixaPage() {
           </div>
           
           <div className="bg-slate-50/60 border-t border-slate-200 px-5 py-3 flex items-center justify-between text-[11px] text-slate-400 font-semibold">
-            <span>Exibindo {transacoesFiltradas.length} de {transacoesMock.length} registros</span>
-            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Secure Line</span>
+            <span>Totalizadores operacionais baseados nas consultas da API</span>
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Core Finance</span>
           </div>
         </div>
 

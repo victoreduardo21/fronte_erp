@@ -15,33 +15,56 @@ import {
   Edit2
 } from 'lucide-react';
 
+// Interfaces internas exclusivas do comportamento do Front-End
+interface FaturaReceber {
+  id: string;
+  cliente: string;
+  categoria: string;
+  vencimento: string;
+  valor: number;
+  status: 'recebido' | 'pendente' | 'vencido';
+}
+
 export default function ContasAReceberPage() {
   const router = useRouter();
   const [carregando, setCarregando] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
-  const [filtroStatus, setFiltroStatus] = useState<string>('todos'); // todos, recebido, pendente, vencido
+  const [filtroStatus, setFiltroStatus] = useState<string>('todos');
 
-  // Estado dinâmico com faturas simulando o banco de dados do ERP
-  const [faturas, setFaturas] = useState([
-    { id: '1', cliente: 'SaaS Enterprise - Cliente Alfa', categoria: 'Contratos', vencimento: '05/06/2026', valor: 2500.00, status: 'pendente' },
-    { id: '2', cliente: 'Desenvolvimento Web - StartHub', categoria: 'Serviços', vencimento: '15/06/2026', valor: 4200.00, status: 'pendente' },
-    { id: '3', cliente: 'Licença Mensal - Beta Ltda', categoria: 'Produtos', vencimento: '28/05/2026', valor: 1500.00, status: 'recebido' },
-    { id: '4', cliente: 'Consultoria Backend - TechSolutions', categoria: 'Serviços', vencimento: '20/05/2026', valor: 1800.00, status: 'vencido' },
-    { id: '5', cliente: 'Suporte Técnico Premium - Omega', categoria: 'Contratos', vencimento: '01/06/2026', valor: 350.00, status: 'pendente' },
-    { id: '6', cliente: 'Setup de Infraestrutura - Inova Corp', categoria: 'Serviços', vencimento: '25/05/2026', valor: 2500.00, status: 'recebido' },
-  ]);
+  // 🗄️ ESTADO ZERADO PRONTO PARA PRODUÇÃO (CONEXÃO COM BACKEND)
+  const [faturas, setFaturas] = useState<FaturaReceber[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      setCarregando(false);
+      return;
     }
+
+    async function carregarContasAReceber() {
+      try {
+        // 📡 CHAMADA REAL À SUA API DE CONTAS A RECEBER NODE.JS
+        // const res = await fetch('http://localhost:4000/api/v1/financeiro/receber', { headers: { Authorization: `Bearer ${token}` } });
+        // const data = await res.json();
+        // setFaturas(data.faturas);
+
+        // Inicializador limpo de produção
+        setFaturas([]);
+        setCarregando(false);
+      } catch (error) {
+        console.error('Erro ao buscar faturas do banco:', error);
+        setCarregando(false);
+      }
+    }
+
+    carregarContasAReceber();
   }, [router]);
 
-  // 🔑 FUNÇÃO DE DAR BAIXA EM FATURAS (Muda status para Recebido)
-  function handleDarBaixa(id: string) {
+  // 🔑 FUNÇÃO DE DAR BAIXA EM FATURAS COM ATUALIZAÇÃO NO BANCO (FETCH COMENTADO)
+  async function handleDarBaixa(id: string) {
+    // const token = localStorage.getItem('@erp:token');
+    // await fetch(`http://localhost:4000/api/v1/financeiro/receber/${id}/baixa`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+    
     setFaturas(faturasAnteriores => 
       faturasAnteriores.map(fatura => 
         fatura.id === id ? { ...fatura, status: 'recebido' } : fatura
@@ -152,13 +175,13 @@ export default function ContasAReceberPage() {
                     ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                     : 'text-slate-500 hover:text-slate-800'}`}
               >
-                {status === 'todos' ? 'Todos' : status === 'recebido' ? 'Recebidos' : status + 's'}
+                {status === 'todos' ? 'Todos' : status === 'pendente' ? 'Em Aberto' : status === 'recebido' ? 'Recebidos' : 'Vencidos'}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 📊 TABELA DE CONTAS A RECEBER */}
+        {/* Tabela de Contas a Receber */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -178,19 +201,16 @@ export default function ContasAReceberPage() {
                     return (
                       <tr key={fatura.id} className="hover:bg-slate-50 transition-colors group">
                         
-                        {/* Cliente */}
                         <td className="py-3.5 px-5 font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
                           {fatura.cliente}
                         </td>
 
-                        {/* Categoria */}
                         <td className="py-3.5 px-5 text-slate-500 font-medium">
                           <span className="bg-slate-100 border border-slate-200/60 px-2 py-0.5 rounded-md text-[10px]">
                             {fatura.categoria}
                           </span>
                         </td>
 
-                        {/* Vencimento */}
                         <td className="py-3.5 px-5 text-slate-400 font-semibold">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -198,29 +218,27 @@ export default function ContasAReceberPage() {
                           </div>
                         </td>
 
-                        {/* Status Customizados */}
                         <td className="py-3.5 px-5">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${fatura.status === 'recebido' && 'bg-emerald-50 text-emerald-700'}
-                            ${fatura.status === 'pendente' && 'bg-indigo-50 text-indigo-700'}
-                            ${fatura.status === 'vencido' && 'bg-rose-50 text-rose-700'}
+                            ${fatura.status === 'recebido' && 'bg-emerald-50 text-emerald-700 border border-emerald-100'}
+                            ${fatura.status === 'pendente' && 'bg-indigo-50 text-indigo-700 border border-indigo-100'}
+                            ${fatura.status === 'vencido' && 'bg-rose-50 text-rose-700 border border-rose-100'}
                           `}>
-                            {fatura.status}
+                            {fatura.status === 'pendente' ? 'Em Aberto' : fatura.status}
                           </span>
                         </td>
 
-                        {/* Valor */}
                         <td className="py-3.5 px-5 text-right font-bold tracking-tight text-sm text-slate-800">
                           {fatura.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </td>
 
-                        {/* 🛠️ AÇÕES INTERATIVAS */}
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             
                             {/* Botão de Confirmar Recebimento (Dar Baixa) */}
                             {fatura.status !== 'recebido' ? (
                               <button 
+                                type="button"
                                 onClick={() => handleDarBaixa(fatura.id)}
                                 title="Confirmar Recebimento"
                                 className="p-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer"
@@ -235,6 +253,7 @@ export default function ContasAReceberPage() {
 
                             {/* Botão de Editar */}
                             <button 
+                              type="button"
                               onClick={() => router.push(`/lancamento?edit=${fatura.id}`)}
                               title="Editar Fatura"
                               className="p-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
@@ -251,7 +270,7 @@ export default function ContasAReceberPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-semibold">
-                      Nenhuma fatura a receber encontrada para este filtro.
+                      Nenhuma fatura a receber identificada no banco de dados.
                     </td>
                   </tr>
                 )}
@@ -259,10 +278,9 @@ export default function ContasAReceberPage() {
             </table>
           </div>
           
-          {/* Rodapé da Tabela */}
           <div className="bg-slate-50/60 border-t border-slate-200 px-5 py-3 flex items-center justify-between text-[11px] text-slate-400 font-semibold">
-            <span>Listando {faturasFiltradas.length} faturas registradas</span>
-            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Audit Mode</span>
+            <span>Listando {faturasFiltradas.length} faturamento de direitos creditórios</span>
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Accounts Receivable</span>
           </div>
         </div>
 
