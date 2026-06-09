@@ -211,7 +211,7 @@ export default function LancamentoManualPage() {
               />
             </div>
 
-            {/* 🔍 AUTOCOMPLETE ATUALIZADO: SUPORTA INTEGRALMENTE BUSCA POR PF (CPF) E PJ (CNPJ) */}
+            {/* 🔍 AUTOCOMPLETE CORRIGIDO: Uppercase correto em entidadeSelecionada */}
             <div ref={dropdownRef} className="flex flex-col gap-1.5 relative">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                 {tipo === 'entrada' ? 'Buscar Cliente *' : 'Buscar Fornecedor *'}
@@ -220,7 +220,7 @@ export default function LancamentoManualPage() {
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
                 <input 
                   type="text"
-                  value={entidadeSelecionada ? entidadeselecionada.nome : termoBusca}
+                  value={entidadeSelecionada ? entidadeSelecionada.nome : termoBusca}
                   disabled={!!entidadeSelecionada}
                   onFocus={() => setMostrarSugestoes(true)}
                   onChange={(e) => { setTermoBusca(e.target.value); setMostrarSugestoes(true); }}
@@ -303,7 +303,7 @@ export default function LancamentoManualPage() {
 
                 <optgroup label="🔴 CUSTOS DAS MERCADORIAS & SERVIÇOS (CMV/CSV)">
                   <option value="Compra de Mercadoria para Revenda">Compra de Mercadoria para Revenda</option>
-                  <option value="Matéria-prima e Insumos de Produção">Matéria-prima e Insumos de Produção</option>
+                  <option value="Matéria-prima e Insumos de Production">Matéria-prima e Insumos de Produção</option>
                   <option value="Fretes e Logística de Entrega">Fretes e Logística de Entrega (Fretamento)</option>
                   <option value="Comissões sobre Vendas">Comissões sobre Vendas</option>
                 </optgroup>
