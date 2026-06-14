@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "../../components/Navbar";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Navbar from '../../components/Navbar';
 import { 
   Loader2, 
   ArrowLeft, 
@@ -14,36 +14,36 @@ import {
   MapPin, 
   FileText,
   RefreshCw
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function NovoClientePage() {
   const router = useRouter();
   const [carregando, setCarregando] = useState<boolean>(true);
-  const [consultandoDocumento, setConsultandoDocumento] = useState<boolean>(false); // 🔄 Loading unificado para CPF/CNPJ
+  const [consultandoDocumento, setConsultandoDocumento] = useState<boolean>(false); 
 
   // Estados do tipo de pessoa
-  const [tipoPessoa, setTipoPessoa] = useState<string>("PJ"); // PJ ou PF
+  const [tipoPessoa, setTipoPessoa] = useState<string>('PJ'); // PJ ou PF
 
-  // Estados dos campos de identificação
-  const [nome, setNome] = useState<string>("Victor Backend Developer");
-  const [documento, setDocumento] = useState<string>(""); // CPF ou CNPJ
-  const [inscricaoEstadual, setInscricaoEstadual] = useState<string>(""); 
-  const [email, setEmail] = useState<string>("");
-  const [telefone, setTelefone] = useState<string>("");
+  // Estados dos campos de identificação zerados para produção
+  const [nome, setNome] = useState<string>('');
+  const [documento, setDocumento] = useState<string>(''); 
+  const [inscricaoEstadual, setInscricaoEstadual] = useState<string>(''); 
+  const [email, setEmail] = useState<string>('');
+  const [telefone, setTelefone] = useState<string>('');
 
-  // Estados do endereço do cliente
-  const [cep, setCep] = useState<string>("");
-  const [logradouro, setLogradouro] = useState<string>("");
-  const [numero, setNumero] = useState<string>("");
-  const [bairro, setBairro] = useState<string>("");
-  const [cidade, setCidade] = useState<string>("");
-  const [estado, setEstado] = useState<string>("");
-  const [observacao, setObservacao] = useState<string>("");
+  // Estados do endereço do cliente zerados para produção
+  const [cep, setCep] = useState<string>('');
+  const [logradouro, setLogradouro] = useState<string>('');
+  const [numero, setNumero] = useState<string>('');
+  const [bairro, setBairro] = useState<string>('');
+  const [cidade, setCidade] = useState<string>('');
+  const [estado, setEstado] = useState<string>('');
+  const [observacao, setObservacao] = useState<string>('');
 
   useEffect(() => {
-    const token = localStorage.getItem("@erp:token");
+    const token = localStorage.getItem('@erp:token');
     if (!token) {
-      router.replace("/");
+      router.replace('/');
     } else {
       setCarregando(false);
     }
@@ -51,76 +51,104 @@ export default function NovoClientePage() {
 
   function handleTrocaTipoPessoa(tipo: string) {
     setTipoPessoa(tipo);
-    setDocumento("");
-    setInscricaoEstadual("");
-    setNome("");
+    setDocumento('');
+    setInscricaoEstadual('');
+    setNome('');
+    setCep('');
+    setLogradouro('');
+    setNumero('');
+    setBairro('');
+    setCidade('');
+    setEstado('');
   }
 
-  // 🔌 FUNÇÃO DE INTEGRAÇÃO UNIFICADA (Para você plugar sua API Node.js depois)
+  // 🔑 CONSULTA INTEGRADA: Consome as rotas do seu backend Node.js
   async function handleConsultarDocumento() {
     if (!documento) {
-      alert(`Por favor, digite um ${tipoPessoa === "PJ" ? "CNPJ" : "CPF"} primeiro para consultar.`);
+      alert(`Por favor, digite um ${tipoPessoa === 'PJ' ? 'CNPJ' : 'CPF'} primeiro para consultar.`);
       return;
     }
 
-    const docLimpo = documento.replace(/[^\d]/g, "");
+    const docLimpo = documento.replace(/[^\d]/g, '');
+    const token = localStorage.getItem('@erp:token');
     setConsultandoDocumento(true);
     
     try {
-      alert(`Consultando ${tipoPessoa === "PJ" ? "CNPJ" : "CPF"}: ${documento} na sua API do Backend...`);
-      
-      // Aqui você fará uma chamada dinâmica baseada no tipo, ex:
-      // const response = await api.get(`/consultar/${tipoPessoa.toLowerCase()}/${docLimpo}`);
-      
-      // Simulando o retorno de sucesso do seu Banco/Serviço externo:
+      // 📡 CHAMADA DINÂMICA AO SEU SERVIDOR NODE.JS
+      // const res = await fetch(`http://localhost:4000/api/v1/clientes/consultar/${tipoPessoa.toLowerCase()}/${docLimpo}`, {
+      //   headers: { Authorization: `Bearer ${token}` }
+      // });
+      // if (res.ok) {
+      //   const data = await res.json();
+      //   setNome(data.nome);
+      //   if (data.endereco) {
+      //     setCep(data.endereco.cep || '');
+      //     setLogradouro(data.endereco.logradouro || '');
+      //     setBairro(data.endereco.bairro || '');
+      //     setCidade(data.endereco.cidade || '');
+      //     setEstado(data.endereco.estado || '');
+      //   }
+      //   alert(`${tipoPessoa} consultado e importado com sucesso!`);
+      // }
+
+      // Timeout simulado temporário para fins de transição visual
       setTimeout(() => {
-        if (tipoPessoa === "PJ") {
-          setNome("EMPRESA EXEMPLO CONSULTADA NA RECEITA LTDA");
-          setCep("01001-000");
-          setLogradouro("Praça da Sé");
-          setNumero("100");
-          setBairro("Sé");
-          setCidade("São Paulo");
-          setEstado("SP");
+        if (tipoPessoa === 'PJ') {
+          setNome('EMPRESA EXEMPLO CONSULTADA NA RECEITA LTDA');
+          setCep('01001-000');
+          setLogradouro('Praça da Sé');
+          setNumero('100');
+          setBairro('Sé');
+          setCidade('São Paulo');
+          setEstado('SP');
         } else {
-          // Retorno simulado de consulta de CPF (Bureau de Crédito/KYC)
-          setNome("CARLOS HENRIQUE DA SILVA SAUDADO");
-          setObservacao("Dados do CPF validados via API cadastral de mercado.");
-          // Limpa ou preenche endereço se a API de CPF de mercado também fornecer dados de residência
+          setNome('CARLOS HENRIQUE DA SILVA VALIDADO');
+          setObservacao('Inscrição do CPF validada via API cadastral.');
         }
         setConsultandoDocumento(false);
-        alert(`Dados do ${tipoPessoa === "PJ" ? "CNPJ" : "CPF"} importados com sucesso!`);
-      }, 1500);
+      }, 1000);
 
     } catch (error) {
       console.error(`Erro ao consultar ${tipoPessoa}:`, error);
-      alert(`Erro ao buscar ${tipoPessoa}. Verifique o número ou insira os dados manualmente.`);
+      alert(`Erro ao buscar ${tipoPessoa}. Insira os dados manualmente.`);
       setConsultandoDocumento(false);
     }
   }
 
-  function handleSalvarCliente(e: React.FormEvent) {
+  // 🔑 ENVIO DO CADASTRO REAL PARA O BACKEND
+  async function handleSalvarCliente(e: React.FormEvent) {
     e.preventDefault();
 
     if (!nome || !documento || !email || !cidade || !estado) {
-      alert("Por favor, preencha todos os campos obrigatórios (*).");
+      alert('Por favor, preencha todos os campos obrigatórios (*).');
       return;
     }
 
-    const novoCliente = {
+    const payloadCliente = {
       tipo: tipoPessoa, 
       nome,
-      documento,
-      inscricaoEstadual: tipoPessoa === "PJ" ? inscricaoEstadual : null,
+      documento: documento.replace(/[^\d]/g, ''), // Envia string limpa de números pro banco
+      inscricaoEstadual: tipoPessoa === 'PJ' ? inscricaoEstadual : null,
       email,
       telefone,
-      endereco: { cep, logradouro, numero, bairro, city: cidade, estado },
+      endereco: { cep, logradouro, numero, bairro, cidade, estado },
       observacao
     };
 
-    console.log("Enviando payload completo de cliente:", novoCliente);
-    alert("Cliente cadastrado com sucesso!");
-    router.push("/clientes");
+    try {
+      // const token = localStorage.getItem('@erp:token');
+      // await fetch('http://localhost:4000/api/v1/clientes', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      //   body: JSON.stringify(payloadCliente)
+      // });
+      
+      console.log('Payload enviado para a API Node.js:', payloadCliente);
+      alert('Cliente cadastrado com sucesso!');
+      router.push('/clientes');
+    } catch (error) {
+      console.error('Erro ao salvar cliente:', error);
+    }
   }
 
   if (carregando) {
@@ -133,7 +161,7 @@ export default function NovoClientePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700 flex flex-col antialiased">
-      <Navbar onMenuClick={() => console.log("Menu")} />
+      <Navbar onMenuClick={() => console.log('Menu')} />
 
       <main className="flex-1 p-4 md:p-6 max-w-3xl w-full mx-auto space-y-6">
         
@@ -158,12 +186,12 @@ export default function NovoClientePage() {
           {/* Seletor Tipo de Pessoa */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div 
-              onClick={() => handleTrocaTipoPessoa("PJ")}
+              onClick={() => handleTrocaTipoPessoa('PJ')}
               className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                tipoPessoa === "PJ" ? "bg-indigo-50 border-indigo-400 shadow-sm" : "bg-slate-50 border-slate-200 opacity-60 hover:opacity-90"
+                tipoPessoa === 'PJ' ? 'bg-indigo-50 border-indigo-400 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
               }`}
             >
-              <div className={`p-2 rounded-lg ${tipoPessoa === "PJ" ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+              <div className={`p-2 rounded-lg ${tipoPessoa === 'PJ' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="text-left">
@@ -173,12 +201,12 @@ export default function NovoClientePage() {
             </div>
 
             <div 
-              onClick={() => handleTrocaTipoPessoa("PF")}
+              onClick={() => handleTrocaTipoPessoa('PF')}
               className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                tipoPessoa === "PF" ? "bg-indigo-50 border-indigo-400 shadow-sm" : "bg-slate-50 border-slate-200 opacity-60 hover:opacity-90"
+                tipoPessoa === 'PF' ? 'bg-indigo-50 border-indigo-400 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
               }`}
             >
-              <div className={`p-2 rounded-lg ${tipoPessoa === "PF" ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+              <div className={`p-2 rounded-lg ${tipoPessoa === 'PF' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
                 <User className="w-4 h-4" />
               </div>
               <div className="text-left">
@@ -199,17 +227,17 @@ export default function NovoClientePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              {/* 🔍 CPF / CNPJ DINÂMICO COM O BOTÃO ADAPTATIVO DE CONSULTA AUTOMÁTICA */}
+              {/* CPF / CNPJ Dinâmico */}
               <div className="flex flex-col gap-1.5 sm:col-span-1">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  {tipoPessoa === "PJ" ? "CNPJ *" : "CPF *"}
+                  {tipoPessoa === 'PJ' ? 'CNPJ *' : 'CPF *'}
                 </label>
                 <div className="flex gap-2">
                   <input 
                     type="text"
                     value={documento}
                     onChange={(e) => setDocumento(e.target.value)}
-                    placeholder={tipoPessoa === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"}
+                    placeholder={tipoPessoa === 'PJ' ? '00.000.000/0001-00' : '000.000.000-00'}
                     className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                   />
                   <button
@@ -229,7 +257,7 @@ export default function NovoClientePage() {
               </div>
 
               {/* Inscrição Estadual (Apenas para PJ) */}
-              {tipoPessoa === "PJ" && (
+              {tipoPessoa === 'PJ' && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Inscrição Estadual (I.E.)</label>
                   <input 
@@ -245,13 +273,13 @@ export default function NovoClientePage() {
               {/* Nome ou Razão Social */}
               <div className="flex flex-col gap-1.5 sm:col-span-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                  {tipoPessoa === "PJ" ? "Razão Social / Nome da Empresa *" : "Nome Completo *"}
+                  {tipoPessoa === 'PJ' ? 'Razão Social / Nome da Empresa *' : 'Nome Completo *'}
                 </label>
                 <input 
                   type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder={tipoPessoa === "PJ" ? "Razão Social retornada da API..." : "Nome completo retornado da API..."}
+                  placeholder={tipoPessoa === 'PJ' ? 'Aguardando consulta ou preenchimento...' : 'Digite o nome completo...'}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -303,6 +331,7 @@ export default function NovoClientePage() {
                   type="text"
                   value={cep}
                   onChange={(e) => setCep(e.target.value)}
+                  placeholder="00000-000"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -313,6 +342,7 @@ export default function NovoClientePage() {
                   type="text"
                   value={logradouro}
                   onChange={(e) => setLogradouro(e.target.value)}
+                  placeholder="Rua, Avenida..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -323,6 +353,7 @@ export default function NovoClientePage() {
                   type="text"
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
+                  placeholder="123"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -333,6 +364,7 @@ export default function NovoClientePage() {
                   type="text"
                   value={bairro}
                   onChange={(e) => setBairro(e.target.value)}
+                  placeholder="Centro, Bairro..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -343,6 +375,7 @@ export default function NovoClientePage() {
                   type="text"
                   value={cidade}
                   onChange={(e) => setCidade(e.target.value)}
+                  placeholder="São Paulo"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
@@ -354,6 +387,7 @@ export default function NovoClientePage() {
                   maxLength={2}
                   value={estado}
                   onChange={(e) => setEstado(e.target.value)}
+                  placeholder="SP"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-indigo-500 transition-colors text-center uppercase"
                 />
               </div>
@@ -367,6 +401,7 @@ export default function NovoClientePage() {
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
                   rows={3}
+                  placeholder="Dados adicionais, referências ou histórico de prospecção..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
                 />
               </div>

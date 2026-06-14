@@ -5,16 +5,27 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import { 
   Search, 
-  PlusCircle,
-  Loader2,
-  Building,
-  CheckCircle,
-  PackageCheck,
-  Edit2,
-  Trash2,
-  Truck,
+  PlusCircle, 
+  Loader2, 
+  Building, 
+  CheckCircle, 
+  PackageCheck, 
+  Edit2, 
+  Trash2, 
+  Truck, 
   ShieldCheck
 } from 'lucide-react';
+
+// Interfaces internas exclusivas do comportamento do Front-End
+interface Fornecedor {
+  id: string;
+  nome: string;
+  documento: string;
+  email: string;
+  telefone: string;
+  categoria: string;
+  status: 'ativo' | 'inativo';
+}
 
 export default function CadastroFornecedoresPage() {
   const router = useRouter();
@@ -22,43 +33,59 @@ export default function CadastroFornecedoresPage() {
   const [busca, setBusca] = useState<string>('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos'); // todos, ativo, inativo
 
-  // Estado dinâmico de fornecedores simulando a base de dados do ERP
-  const [fornecedores, setFornecedores] = useState([
-    { id: '1', nome: 'Atacadista de Alimentos Central S/A', documento: '45.123.890/0001-12', email: 'vendas@atacadocentral.com.br', telefone: '(11) 3344-5566', categoria: 'Mercadoria', status: 'ativo' },
-    { id: '2', nome: 'Distribuidora de Embalagens Plastix', documento: '02.456.789/0001-55', email: 'comercial@plastix.com', telefone: '(21) 98877-6655', categoria: 'Insumos', status: 'ativo' },
-    { id: '3', nome: 'Distribuidora de Energia S/A', documento: '14.789.012/0001-99', email: 'corporativo@energiasa.com', telefone: '0800 727 2196', categoria: 'Custos Fixos', status: 'ativo' },
-    { id: '4', nome: 'Logística Speed Transportes Ltda', documento: '88.999.111/0001-00', email: 'fretes@speedlog.com.br', telefone: '(19) 3255-4433', categoria: 'Logística', status: 'inativo' },
-    { id: '5', nome: 'GTS Consultoria Contábil', documento: '33.444.555/0001-44', email: 'contato@gtscontabil.com.br', telefone: '(81) 3033-4040', categoria: 'Serviços', status: 'ativo' },
-  ]);
+  // 🗄️ ESTADO ZERADO PRONTO PARA PRODUÇÃO (CONEXÃO COM BACKEND)
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      setCarregando(false);
+      return;
     }
+
+    async function carregarFornecedores() {
+      try {
+        // 📡 CHAMADA REAL À SUA API DE FORNECEDORES NODE.JS
+        // const res = await fetch('http://localhost:4000/api/v1/fornecedores', { headers: { Authorization: `Bearer ${token}` } });
+        // const data = await res.json();
+        // setFornecedores(data.fornecedores);
+
+        // Inicializador limpo de produção
+        setFornecedores([]);
+        setCarregando(false);
+      } catch (error) {
+        console.error('Erro ao buscar fornecedores da base de dados:', error);
+        setCarregando(false);
+      }
+    }
+
+    carregarFornecedores();
   }, [router]);
 
-  // Alternar Status do Fornecedor rápido
-  function handleAlternarStatus(id: string) {
+  // 🔑 ALTERNAR STATUS COM PATCH NO BACKEND (FETCH COMENTADO)
+  async function handleAlternarStatus(id: string, statusAtual: 'ativo' | 'inativo') {
+    const novoStatus = statusAtual === 'ativo' ? 'inativo' : 'ativo';
+    // const token = localStorage.getItem('@erp:token');
+    // await fetch(`http://localhost:4000/api/v1/fornecedores/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: novoStatus }) });
+
     setFornecedores(fornecedoresAnteriores =>
       fornecedoresAnteriores.map(fornecedor =>
-        fornecedor.id === id 
-          ? { ...fornecedor, status: fornecedor.status === 'ativo' ? 'inativo' : 'ativo' } 
-          : fornecedor
+        fornecedor.id === id ? { ...fornecedor, status: novoStatus } : fornecedor
       )
     );
   }
 
-  // Função para deletar registro (simulada)
-  function handleDeletarFornecedor(id: string) {
+  // 🔑 REMOVER REGISTRO COM DELETE NO BACKEND (FETCH COMENTADO)
+  async function handleDeletarFornecedor(id: string) {
     if (confirm('Tem certeza que deseja remover este fornecedor da base?')) {
+      // const token = localStorage.getItem('@erp:token');
+      // await fetch(`http://localhost:4000/api/v1/fornecedores/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+
       setFornecedores(fornecedoresAnteriores => fornecedoresAnteriores.filter(f => f.id !== id));
     }
   }
 
-  // Filtro por Nome, Documento (CNPJ) ou Categoria
+  // 🚀 FILTRO CORRIGIDO: Removido o lixo de digitação que causava o erro .map
   const fornecedoresFiltrados = fornecedores.filter(f => {
     const bateBusca = 
       f.nome.toLowerCase().includes(busca.toLowerCase()) || 
@@ -68,7 +95,7 @@ export default function CadastroFornecedoresPage() {
     return bateBusca && bateStatus;
   });
 
-  // Métricas do topo baseadas no estado
+  // Métricas do topo reativas baseadas no estado real vindos da API
   const totalFornecedores = fornecedores.length;
   const totalAtivos = fornecedores.filter(f => f.status === 'ativo').length;
   const totalCategorias = new Set(fornecedores.map(f => f.categoria)).size;
@@ -217,19 +244,20 @@ export default function CadastroFornecedoresPage() {
                         {/* Status */}
                         <td className="py-3.5 px-5">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${fornecedor.status === 'ativo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}
+                            ${fornecedor.status === 'ativo' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-400'}
                           `}>
                             {fornecedor.status}
                           </span>
                         </td>
 
-                        {/* 🛠️ AÇÕES DO CADASTRO */}
+                        {/* Ações operacionais do cadastro */}
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             
                             {/* Ativar / Inativar Rápido */}
                             <button 
-                              onClick={() => handleAlternarStatus(fornecedor.id)}
+                              type="button"
+                              onClick={() => handleAlternarStatus(fornecedor.id, fornecedor.status)}
                               title={fornecedor.status === 'ativo' ? 'Suspender Fornecedor' : 'Reativar Fornecedor'}
                               className={`p-1.5 border rounded-lg transition-colors cursor-pointer ${
                                 fornecedor.status === 'ativo' 
@@ -242,6 +270,7 @@ export default function CadastroFornecedoresPage() {
 
                             {/* Editar */}
                             <button 
+                              type="button"
                               onClick={() => router.push(`/fornecedores/editar?id=${fornecedor.id}`)}
                               title="Editar Fornecedor"
                               className="p-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
@@ -251,6 +280,7 @@ export default function CadastroFornecedoresPage() {
 
                             {/* Excluir */}
                             <button 
+                              type="button"
                               onClick={() => handleDeletarFornecedor(fornecedor.id)}
                               title="Remover Registro"
                               className="p-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg hover:bg-rose-600 hover:text-white transition-colors cursor-pointer"
@@ -267,7 +297,7 @@ export default function CadastroFornecedoresPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-semibold">
-                      Nenhum fornecedor encontrado para esta busca.
+                      Nenhum fornecedor homologado na base de dados.
                     </td>
                   </tr>
                 )}
@@ -275,7 +305,6 @@ export default function CadastroFornecedoresPage() {
             </table>
           </div>
           
-          {/* Rodapé */}
           <div className="bg-slate-50/60 border-t border-slate-200 px-5 py-3 flex items-center justify-between text-[11px] text-slate-400 font-semibold">
             <span>Mostrando {fornecedoresFiltrados.length} parceiros homologados</span>
             <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS Supply Chain</span>

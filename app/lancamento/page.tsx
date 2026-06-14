@@ -15,12 +15,12 @@ import {
   User
 } from 'lucide-react';
 
-// Interfaces para tipagem explícita
+// Interface interna do comportamento do Front-End
 interface Entidade {
   id: string;
   nome: string;
   documento: string;
-  tipo: string; // PJ ou PF
+  tipo: 'PF' | 'PJ'; 
 }
 
 export default function LancamentoManualPage() {
@@ -28,7 +28,7 @@ export default function LancamentoManualPage() {
   const [carregando, setCarregando] = useState<boolean>(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Estados dos campos do formulário
+  // Estados do formulário limpos para produção
   const [tipo, setTipo] = useState<string>('entrada'); // entrada ou saida
   const [descricao, setDescricao] = useState<string>('');
   const [categoria, setCategoria] = useState<string>('');
@@ -37,37 +37,56 @@ export default function LancamentoManualPage() {
   const [status, setStatus] = useState<string>('pendente'); 
   const [observacao, setObservacao] = useState<string>('');
 
-  // 🗄️ Estados de Autocomplete para Clientes e Fornecedores (PF e PJ)
+  // 🗄️ Estados de Autocomplete dinâmico zerados para receber chamadas da API
   const [termoBusca, setTermoBusca] = useState<string>('');
   const [entidadeSelecionada, setEntidadeSelecionada] = useState<Entidade | null>(null);
   const [mostrarSugestoes, setMostrarSugestoes] = useState<boolean>(false);
-
-  // Mocks locais emulando as tabelas do banco de dados do seu ERP (Contendo PJ e PF)
-  const clientesMock: Entidade[] = [
-    { id: 'c1', nome: 'Distribuidora de Alimentos Alfa Ltda', documento: '12.345.678/0001-90', tipo: 'PJ' },
-    { id: 'c2', nome: 'Carlos Henrique Silva', documento: '456.789.123-00', tipo: 'PF' },
-    { id: 'c3', nome: 'Indústria e Comércio Beta S/A', documento: '98.765.432/0001-10', tipo: 'PJ' },
-  ];
-
-  const fornecedoresMock: Entidade[] = [
-    { id: 'f1', nome: 'Atacadista de Alimentos Central S/A', documento: '45.123.890/0001-12', tipo: 'PJ' },
-    { id: 'f2', nome: 'Distribuidora de Embalagens Plastix', documento: '02.456.789/0001-55', tipo: 'PJ' },
-    { id: 'f3', nome: 'GTS Consultoria Contábil', documento: '33.444.555/0001-44', tipo: 'PJ' },
-    { id: 'f4', nome: 'Marcos Roberto Mecânico Autônomo', documento: '123.456.789-11', tipo: 'PF' },
-  ];
+  const [sugestoesFiltradas, setSugestoesFiltradas] = useState<Entidade[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      const hoje = new Date().toISOString().split('T')[0];
-      setDataLancamento(hoje);
-      setCarregando(false);
+      return;
     }
+    const hoje = new Date().toISOString().split('T')[0];
+    setDataLancamento(hoje);
+    setCarregando(false);
   }, [router]);
 
-  // Fecha o dropdown de sugestões se o usuário clicar fora do componente
+  // 📡 EFEITO DE AUTOCOMPLETE REAL: Dispara busca no banco conforme digitação (Debounce recomendado)
+  useEffect(() => {
+    if (!termoBusca || entidadeSelecionada) {
+      setSugestoesFiltradas([]);
+      return;
+    }
+
+    const token = localStorage.getItem('@erp:token');
+    const moduloBusca = tipo === 'entrada' ? 'clientes' : 'fornecedores';
+
+    async function buscarEntidadesDoBanco() {
+      try {
+        // Exemplo de integração real com seu Express:
+        // const res = await fetch(`http://localhost:4000/api/v1/${moduloBusca}/autocomplete?q=${termoBusca}`, {
+        //   headers: { Authorization: `Bearer ${token}` }
+        // });
+        // if (res.ok) {
+        //   const data = await res.json();
+        //   setSugestoesFiltradas(data);
+        // }
+      } catch (error) {
+        console.error('Erro na busca dinâmica do autocomplete:', error);
+      }
+    }
+
+    const timer = setTimeout(() => {
+      buscarEntidadesDoBanco();
+    }, 300); // 300ms de debounce para poupar o banco de dados
+
+    return () => clearTimeout(timer);
+  }, [termoBusca, tipo, entidadeSelecionada]);
+
+  // Fecha o dropdown se clicar fora
   useEffect(() => {
     function handleClickFora(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -78,22 +97,16 @@ export default function LancamentoManualPage() {
     return () => document.removeEventListener('mousedown', handleClickFora);
   }, []);
 
-  // Reseta a entidade selecionada caso o usuário mude de Entrada para Saída
   function handleTrocaTipo(novoTipo: string) {
     setTipo(novoTipo);
     setTermoBusca('');
     setEntidadeSelecionada(null);
+    setSugestoesFiltradas([]);
     setStatus('pendente');
   }
 
-  // Filtra as sugestões baseado no termo digitado (Busca por Nome, CNPJ ou CPF)
-  const baseParaFiltrar = tipo === 'entrada' ? clientesMock : fornecedoresMock;
-  const sugestoesFiltradas = baseParaFiltrar.filter(entidade =>
-    entidade.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    entidade.documento.replace(/[^\d]/g, '').includes(termoBusca.replace(/[^\d]/g, ''))
-  );
-
-  function handleSalvar(e: React.FormEvent) {
+  // 🔑 SUBMISSÃO DO LANÇAMENTO AO BANCO
+  async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
 
     if (!descricao || !valor || !dataLancamento || !categoria) {
@@ -101,18 +114,15 @@ export default function LancamentoManualPage() {
       return;
     }
 
-    // Trava de segurança para garantir vínculo íntegro no banco de dados
     if (!entidadeSelecionada) {
-      alert(`Por favor, selecione um ${tipo === 'entrada' ? 'Cliente' : 'Fornecedor'} cadastrado na lista.`);
+      alert(`Por favor, selecione um ${tipo === 'entrada' ? 'Cliente' : 'Fornecedor'} homologado.`);
       return;
     }
 
-    const novoLancamento = {
+    const payloadLancamento = {
       tipo,
       descricao,
       entidadeId: entidadeSelecionada.id, 
-      entidadeNome: entidadeSelecionada.nome,
-      entidadeTipo: entidadeSelecionada.tipo, // PF ou PJ
       categoria,
       data: dataLancamento,
       valor: parseFloat(valor),
@@ -120,9 +130,20 @@ export default function LancamentoManualPage() {
       observacao,
     };
 
-    console.log('Payload enviado para a API Node.js:', novoLancamento);
-    alert('Lançamento registrado com sucesso!');
-    router.push('/fluxo');
+    try {
+      // const token = localStorage.getItem('@erp:token');
+      // await fetch('http://localhost:4000/api/v1/financeiro/lancamentos', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      //   body: JSON.stringify(payloadLancamento)
+      // });
+
+      console.log('Payload enviado para a API Node.js:', payloadLancamento);
+      alert('Lançamento registrado com sucesso!');
+      router.push('/fluxo');
+    } catch (error) {
+      console.error('Erro ao registrar lançamento:', error);
+    }
   }
 
   if (carregando) {
@@ -162,9 +183,7 @@ export default function LancamentoManualPage() {
             <div 
               onClick={() => handleTrocaTipo('entrada')}
               className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                tipo === 'entrada' 
-                  ? 'bg-emerald-50 border-emerald-400 shadow-sm' 
-                  : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
+                tipo === 'entrada' ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
               }`}
             >
               <div className={`p-2 rounded-lg ${tipo === 'entrada' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
@@ -179,9 +198,7 @@ export default function LancamentoManualPage() {
             <div 
               onClick={() => handleTrocaTipo('saida')}
               className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
-                tipo === 'saida' 
-                  ? 'bg-rose-50 border-rose-400 shadow-sm' 
-                  : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
+                tipo === 'saida' ? 'bg-rose-50 border-rose-400 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60 hover:opacity-90'
               }`}
             >
               <div className={`p-2 rounded-lg ${tipo === 'saida' ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
@@ -211,7 +228,7 @@ export default function LancamentoManualPage() {
               />
             </div>
 
-            {/* 🔍 AUTOCOMPLETE CORRIGIDO: Uppercase correto em entidadeSelecionada */}
+            {/* Autocomplete Dinâmico contra o Banco */}
             <div ref={dropdownRef} className="flex flex-col gap-1.5 relative">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                 {tipo === 'entrada' ? 'Buscar Cliente *' : 'Buscar Fornecedor *'}
@@ -226,9 +243,7 @@ export default function LancamentoManualPage() {
                   onChange={(e) => { setTermoBusca(e.target.value); setMostrarSugestoes(true); }}
                   placeholder={tipo === 'entrada' ? "Digite nome, CPF ou CNPJ do cliente..." : "Digite nome, CPF ou CNPJ do fornecedor..."}
                   className={`w-full border rounded-xl pl-9 pr-4 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500 transition-all
-                    ${entidadeSelecionada 
-                      ? 'bg-indigo-50/50 border-indigo-200 text-indigo-900 font-bold' 
-                      : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                    ${entidadeSelecionada ? 'bg-indigo-50/50 border-indigo-200 text-indigo-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                 />
                 
                 {entidadeSelecionada && (
@@ -242,9 +257,9 @@ export default function LancamentoManualPage() {
                 )}
               </div>
 
-              {/* Menu de Sugestões Dropdown */}
-              {mostrarSugestoes && !entidadeSelecionada && (
-                <div className="absolute top-[60px] w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto z-40 divide-y divide-slate-100 animate-in fade-in slide-in-from-top-1 duration-100">
+              {/* Menu Dropdown Alimentado pelo Estado da API */}
+              {mostrarSugestoes && !entidadeSelecionada && termoBusca && (
+                <div className="absolute top-[60px] w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-y-auto z-40 divide-y divide-slate-100 duration-100">
                   {sugestoesFiltradas.length > 0 ? (
                     sugestoesFiltradas.map((entidade) => (
                       <div
@@ -256,19 +271,13 @@ export default function LancamentoManualPage() {
                         className="p-3 text-xs hover:bg-slate-50 cursor-pointer flex items-center justify-between group"
                       >
                         <div className="flex items-center gap-2">
-                          {entidade.tipo === 'PJ' ? (
-                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          ) : (
-                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          )}
+                          {entidade.tipo === 'PJ' ? <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" /> : <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
                           <span className="font-semibold text-slate-700 group-hover:text-slate-900 truncate max-w-[180px]">
                             {entidade.nome}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-extrabold px-1 py-0.2 rounded uppercase ${
-                            entidade.tipo === 'PJ' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-slate-100 text-slate-500'
-                          }`}>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded uppercase ${entidade.tipo === 'PJ' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
                             {entidade.tipo}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono shrink-0">{entidade.documento}</span>
@@ -277,7 +286,7 @@ export default function LancamentoManualPage() {
                     ))
                   ) : (
                     <div className="p-3 text-xs text-slate-400 font-medium text-center">
-                      Nenhum registro encontrado para essa busca.
+                      Nenhum cadastro homologado localizado.
                     </div>
                   )}
                 </div>
@@ -303,7 +312,7 @@ export default function LancamentoManualPage() {
 
                 <optgroup label="🔴 CUSTOS DAS MERCADORIAS & SERVIÇOS (CMV/CSV)">
                   <option value="Compra de Mercadoria para Revenda">Compra de Mercadoria para Revenda</option>
-                  <option value="Matéria-prima e Insumos de Production">Matéria-prima e Insumos de Produção</option>
+                  <option value="Matéria-prima e Insumos de Produção">Matéria-prima e Insumos de Produção</option>
                   <option value="Fretes e Logística de Entrega">Fretes e Logística de Entrega (Fretamento)</option>
                   <option value="Comissões sobre Vendas">Comissões sobre Vendas</option>
                 </optgroup>

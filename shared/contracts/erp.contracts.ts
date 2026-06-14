@@ -122,3 +122,120 @@ export interface IFaturaReceberItem {
 export interface IContasAReceberResponse {
   faturas: IFaturaReceberItem[];
 }
+
+/**
+ * ==============================================================================
+ * GTS ERP - CONTRATO DE INTERFACE DE CADASTRO DE CLIENTES (PRODUÇÃO REAL)
+ * ==============================================================================
+ */
+
+export type ClienteTipo = 'PF' | 'PJ';
+export type ClienteStatus = 'ativo' | 'inativo';
+
+// Contrato individual do objeto de cada cliente retornado pelo banco
+export interface IClienteItem {
+  id: string;          // UUID do banco de dados
+  nome: string;        // Nome completo ou Razão Social
+  documento: string;   // CPF ou CNPJ formatado
+  email: string;       // E-mail principal de contato
+  telefone: string;    // Telefone comercial/pessoal formatado
+  tipo: ClienteTipo;   // 'PF' ou 'PJ'
+  status: ClienteStatus;
+}
+
+// 🚀 O CONTRATO MESTRE DA RESPOSTA (O formato exato do JSON que a API Express vai cuspir)
+export interface IClientesResponse {
+  clientes: IClienteItem[];
+}
+
+/**
+ * ==============================================================================
+ * GTS ERP - CONTRATO DE INTERFACE DE CRIAÇÃO E CONSULTA DE CLIENTE (PRODUÇÃO)
+ * ==============================================================================
+ */
+
+export type PessoaTipo = 'PF' | 'PJ';
+
+// 1. Contrato da estrutura interna do endereço
+export interface IEnderecoCliente {
+  cep: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  estado: string; // UF com 2 caracteres
+}
+
+// 2. 🔥 CONTRATO DO PAYLOAD DE CRIAÇÃO (Body que o POST /api/v1/clientes deve receber)
+export interface INovoClientePayload {
+  tipo: PessoaTipo;
+  nome: string;              // Razão Social (PJ) ou Nome Completo (PF)
+  documento: string;         // Apenas números limpos (CPF ou CNPJ)
+  inscricaoEstadual: string | null; // Nulo se for PF
+  email: string;
+  telefone: string;
+  endereco: IEnderecoCliente;
+  observacao?: string;
+}
+
+// 3. 🔥 CONTRATO DE RESPOSTA DA CONSULTA AUTOMÁTICA (Retorno do GET /api/v1/clientes/consultar/:tipo/:documento)
+export interface IConsultaDocumentoResponse {
+  documento: string;
+  nome: string;              // Nome retornado da Receita Federal ou Bureau
+  endereco?: Partial<IEnderecoCliente>; // Dados de localização quando disponíveis
+}
+
+/**
+ * ==============================================================================
+ * GTS ERP - CONTRATO DE INTERFACE DE FORNECEDORES (PRODUÇÃO REAL)
+ * ==============================================================================
+ */
+
+export type FornecedorStatus = 'ativo' | 'inativo';
+
+// Contrato individual de cada credor/fornecedor que preenche a listagem
+export interface IFornecedorItem {
+  id: string;          // UUID gerado pelo banco
+  nome: string;        // Razão Social corporativa
+  documento: string;   // CNPJ formatado
+  email: string;       // E-mail comercial
+  telefone: string;    // Telefone fixo ou celular
+  categoria: string;   // Segmento (Ex: "Mercadoria", "Insumos", "Serviços")
+  status: FornecedorStatus;
+}
+
+// 🚀 O CONTRATO MESTRE DA RESPOSTA (O formato exato do JSON que o seu Express precisa cuspir)
+export interface IFornecedoresResponse {
+  fornecedores: IFornecedorItem[];
+}
+
+
+/**
+ * ==============================================================================
+ * GTS ERP - CONTRATO DE INTERFACE DE NOVO LANÇAMENTO (PRODUÇÃO REAL)
+ * ==============================================================================
+ */
+
+export type MovimentacaoTipo = 'entrada' | 'saida';
+export type MovimentacaoStatus = 'pago' | 'recebido' | 'pendente';
+export type EntidadeTipo = 'PF' | 'PJ';
+
+// 1. Contrato de resposta para o drop-down do Autocomplete (GET)
+export interface IAutocompleteEntidade {
+  id: string;          // ID da tabela de Clientes ou Fornecedores
+  nome: string;        // Razão Social ou Nome Completo
+  documento: string;   // CPF ou CNPJ formatado
+  tipo: EntidadeTipo;
+}
+
+// 2. 🔥 CONTRATO DO PAYLOAD DE CRIAÇÃO (Body que o POST /api/v1/financeiro/lancamentos deve aceitar)
+export interface INovoLancamentoPayload {
+  tipo: MovimentacaoTipo;
+  descricao: string;   // Detalhes da transação
+  entidadeId: string;  // ID da entidade vinculada para chave estrangeira (Foreign Key)
+  categoria: string;   // Item selecionado do Plano de Contas
+  data: string;        // Data de vencimento em formato ISO (YYYY-MM-DD)
+  valor: number;       // Float numérico puro para manipulação matemática
+  status: MovimentacaoStatus;
+  observacao?: string; // Texto complementar opcional
+}

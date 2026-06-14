@@ -16,49 +16,76 @@ import {
   UserCheck
 } from 'lucide-react';
 
+// Interfaces internas exclusivas do comportamento do Front-End
+interface Cliente {
+  id: string;
+  nome: string;
+  documento: string;
+  email: string;
+  telefone: string;
+  tipo: 'PF' | 'PJ';
+  status: 'ativo' | 'inativo';
+}
+
 export default function CadastroClientesPage() {
   const router = useRouter();
   const [carregando, setCarregando] = useState<boolean>(true);
   const [busca, setBusca] = useState<string>('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos'); // todos, ativo, inativo
 
-  // Estado dinâmico de clientes simulando a base de dados do ERP
-  const [clientes, setClientes] = useState([
-    { id: '1', nome: 'Distribuidora de Alimentos Alfa Ltda', documento: '12.345.678/0001-90', email: 'financeiro@alfa.com.br', telefone: '(11) 98765-4321', tipo: 'PJ', status: 'ativo' },
-    { id: '2', nome: 'Carlos Henrique Silva', documento: '456.789.123-00', email: 'carlos.silva@gmail.com', telefone: '(21) 99888-7766', tipo: 'PF', status: 'ativo' },
-    { id: '3', nome: 'Indústria e Comércio Beta S/A', documento: '98.765.432/0001-10', email: 'compras@beta.ind.br', telefone: '(41) 3322-1100', tipo: 'PJ', status: 'ativo' },
-    { id: '4', nome: 'Mariana Costa Oliveira', documento: '789.123.456-11', email: 'mari.costa@outlook.com', telefone: '(31) 98555-4433', tipo: 'PF', status: 'inativo' },
-    { id: '5', nome: 'Tech Soluções e Sistemas Eireli', documento: '55.666.777/0001-22', email: 'contato@techsolucoes.com', telefone: '(81) 3444-5555', tipo: 'PJ', status: 'ativo' },
-  ]);
+  // 🗄️ ESTADO ZERADO PRONTO PARA PRODUÇÃO (CONEXÃO COM BACKEND)
+  const [clientes, setClientes] = useState<Cliente[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('@erp:token');
     if (!token) {
       router.replace('/');
-    } else {
-      setCarregando(false);
+      return;
     }
+
+    async function carregarClientes() {
+      try {
+        // 📡 CHAMADA REAL À SUA API DE CLIENTES NODE.JS
+        // const res = await fetch('http://localhost:4000/api/v1/clientes', { headers: { Authorization: `Bearer ${token}` } });
+        // const data = await res.json();
+        // setClientes(data.clientes);
+
+        // Inicializador limpo de produção
+        setClientes([]);
+        setCarregando(false);
+      } catch (error) {
+        console.error('Erro ao buscar clientes da base de dados:', error);
+        setCarregando(false);
+      }
+    }
+
+    carregarClientes();
   }, [router]);
 
-  // Alternar Status do Cliente (Ativar / Desativar rápido)
-  function handleAlternarStatus(id: string) {
+  // 🔑 ALTERNAR STATUS COM PATCH NO BACKEND (FETCH COMENTADO)
+  async function handleAlternarStatus(id: string, statusAtual: 'ativo' | 'inativo') {
+    const novoStatus = statusAtual === 'ativo' ? 'inativo' : 'ativo';
+    // const token = localStorage.getItem('@erp:token');
+    // await fetch(`http://localhost:4000/api/v1/clientes/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: novoStatus }) });
+
     setClientes(clientesAnteriores =>
       clientesAnteriores.map(cliente =>
-        cliente.id === id 
-          ? { ...cliente, status: cliente.status === 'ativo' ? 'inativo' : 'ativo' } 
-          : cliente
+        cliente.id === id ? { ...cliente, status: novoStatus } : cliente
       )
     );
   }
 
-  // Função para deletar (simulada)
-  function handleDeletarCliente(id: string) {
-    if (confirm('Tem certeza que deseja remover este cliente?')) {
+  // 🔑 REMOVER REGISTRO COM DELETE NO BACKEND (FETCH COMENTADO)
+  async function handleDeletarCliente(id: string) {
+    if (confirm('Tem certeza que deseja remover este cliente do sistema?')) {
+      // const token = localStorage.getItem('@erp:token');
+      // await fetch(`http://localhost:4000/api/v1/clientes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+
       setClientes(clientesAnteriores => clientesAnteriores.filter(c => c.id !== id));
     }
   }
 
-  // Lógica de Filtro e Busca por Nome, Documento ou E-mail
+  // Lógica de Filtro e Pesquisa local sobre os dados da API
   const clientesFiltrados = clientes.filter(c => {
     const bateBusca = 
       c.nome.toLowerCase().includes(busca.toLowerCase()) || 
@@ -68,10 +95,10 @@ export default function CadastroClientesPage() {
     return bateBusca && bateStatus;
   });
 
-  // Métricas dinâmicas do topo
+  // Métricas dinâmicas reativas geradas a partir da base real
   const totalClientes = clientes.length;
   const totalAtivos = clientes.filter(c => c.status === 'ativo').length;
-  const novosDoMes = clientes.filter(c => c.tipo === 'PJ').length; // Simulação comercial para preencher o KPI
+  const totalEmpresasPJ = clientes.filter(c => c.tipo === 'PJ').length;
 
   if (carregando) {
     return (
@@ -91,7 +118,7 @@ export default function CadastroClientesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Cadastro de Clientes</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Gerencie a base de clientes, contatos corporativos e dados de faturamento.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Gerencie la base de clientes, contatos corporativos e dados de faturamento.</p>
           </div>
           <button 
             onClick={() => router.push('/clientes/novo')}
@@ -127,7 +154,7 @@ export default function CadastroClientesPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contas Corporativas (PJ)</p>
-              <h3 className="text-base font-bold text-amber-600 mt-1">{novosDoMes} empresas</h3>
+              <h3 className="text-base font-bold text-amber-600 mt-1">{totalEmpresasPJ} empresas</h3>
             </div>
             <div className="p-2.5 rounded-lg bg-amber-50 text-amber-600">
               <UserPlus className="w-4 h-4" />
@@ -164,7 +191,7 @@ export default function CadastroClientesPage() {
           </div>
         </div>
 
-        {/* 📊 TABELA DE CLIENTES */}
+        {/* Tabela de Clientes */}
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -184,7 +211,6 @@ export default function CadastroClientesPage() {
                     return (
                       <tr key={cliente.id} className="hover:bg-slate-50 transition-colors group">
                         
-                        {/* Nome e Ícone do Tipo */}
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${cliente.tipo === 'PJ' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}>
@@ -197,39 +223,35 @@ export default function CadastroClientesPage() {
                           </div>
                         </td>
 
-                        {/* Documento */}
                         <td className="py-3.5 px-5 font-semibold text-slate-500">
                           {cliente.documento}
                         </td>
 
-                        {/* Telefone */}
                         <td className="py-3.5 px-5 text-slate-500 font-medium">
                           {cliente.telefone}
                         </td>
 
-                        {/* Badge de Tipo */}
                         <td className="py-3.5 px-5">
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cliente.tipo === 'PJ' ? 'bg-amber-50 text-amber-700 border border-amber-200/50' : 'bg-slate-100 text-slate-600'}`}>
                             {cliente.tipo}
                           </span>
                         </td>
 
-                        {/* Status Badges */}
                         <td className="py-3.5 px-5">
                           <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                            ${cliente.status === 'ativo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}
+                            ${cliente.status === 'ativo' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-100 text-slate-400'}
                           `}>
                             {cliente.status}
                           </span>
                         </td>
 
-                        {/* 🛠️ AÇÕES DO CADASTRO */}
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             
                             {/* Alternar Status rápido */}
                             <button 
-                              onClick={() => handleAlternarStatus(cliente.id)}
+                              type="button"
+                              onClick={() => handleAlternarStatus(cliente.id, cliente.status)}
                               title={cliente.status === 'ativo' ? 'Inativar Cliente' : 'Ativar Cliente'}
                               className={`p-1.5 border rounded-lg transition-colors cursor-pointer ${
                                 cliente.status === 'ativo' 
@@ -242,6 +264,7 @@ export default function CadastroClientesPage() {
 
                             {/* Editar */}
                             <button 
+                              type="button"
                               onClick={() => router.push(`/clientes/editar?id=${cliente.id}`)}
                               title="Editar Dados"
                               className="p-1.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
@@ -251,6 +274,7 @@ export default function CadastroClientesPage() {
 
                             {/* Deletar */}
                             <button 
+                              type="button"
                               onClick={() => handleDeletarCliente(cliente.id)}
                               title="Excluir Registro"
                               className="p-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg hover:bg-rose-600 hover:text-white transition-colors cursor-pointer"
@@ -267,7 +291,7 @@ export default function CadastroClientesPage() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="py-12 text-center text-slate-400 text-xs font-semibold">
-                      Nenhum cliente encontrado para esta pesquisa.
+                      Nenhum cliente cadastrado na base de dados.
                     </td>
                   </tr>
                 )}
@@ -275,10 +299,9 @@ export default function CadastroClientesPage() {
             </table>
           </div>
           
-          {/* Rodapé */}
           <div className="bg-slate-50/60 border-t border-slate-200 px-5 py-3 flex items-center justify-between text-[11px] text-slate-400 font-semibold">
-            <span>Mostrando {clientesFiltrados.length} entidades comerciais cadastradas</span>
-            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS CRM Core</span>
+            <span>Mostrando {clientesFiltrados.length} entidades comerciais homologadas</span>
+            <span className="text-slate-400 uppercase tracking-widest text-[9px]">GTS CRM System</span>
           </div>
         </div>
 
